@@ -7,7 +7,7 @@ const dbConfig: sql.config = {
   server: "localhost",
   database: "InvoiceDB",
   user : "Admin_Giribabu",
-  password : "$newPassword1",
+  password : "$LJLpass01",
   options: {
     trustedConnection: true, // Windows Authentication
     trustServerCertificate : true, // For self-signed certificates
@@ -19,7 +19,7 @@ const dbConfig: sql.config = {
 export const connectDB = async () => {
   try {
     const pool = await sql.connect(dbConfig);
-    console.log("✅ Connected to SQL Server");
+    console.log("✅ Connection established successfully to the database.");
     return pool;
   } catch (error) {
     console.error("❌ Database connection failed:", error);

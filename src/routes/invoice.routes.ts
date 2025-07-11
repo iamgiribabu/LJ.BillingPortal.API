@@ -16,6 +16,15 @@ router.post("/generateInvoice", async (req: Request, res: Response) => {
     await generateInvoice(req, res);
 });
 
+router.post("/generateInvoiceHtml", async (req: Request, res: Response) => {
+    console.log("Generating invoice HTML");
+    await generateInvoice(req, res);
+});
+
+
+
+
+
 router.put('/client-address', async (req: Request, res: Response) => {
     await updateInvoiceEntity(req, res);
 })
@@ -39,4 +48,7 @@ router.get('/allClientAddress', async(req : Request, res : Response) => {
     await getAllClientAddresses(req, res);
 })
 
+// router.get('/getInvoiceTemplate', async (req: Request, res: Response) => {
+//     await getHtmlContext(req, res);
+// })
 export default router;

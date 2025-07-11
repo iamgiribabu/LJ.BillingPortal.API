@@ -7,12 +7,14 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "start": "node dist/server.js",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "postcss src/styles/tailwind.css -o src/styles/output.css"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "autoprefixer": "^10.4.21",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -21,6 +23,9 @@
     "mssql": "^11.0.1",
     "mysql2": "^3.14.0",
     "nodemon": "^3.1.9",
+    "postcss": "^8.5.3",
+    "puppeteer": "^24.5.0",
+    "tailwindcss": "^4.1.4",
     "tedious": "^18.6.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
@@ -31,6 +36,7 @@
     "@types/express": "^5.0.1",
     "@types/mssql": "^9.1.7",
     "@types/node": "^22.13.14",
+    "@types/tailwindcss": "^3.1.0",
     "ts-node-dev": "^2.0.0"
   }
 }
