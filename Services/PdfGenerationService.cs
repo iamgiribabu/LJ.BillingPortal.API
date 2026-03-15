@@ -17,7 +17,7 @@ public class PdfGenerationService : IPdfGenerationService
         IWebHostEnvironment environment)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _invoiceOutputPath = Path.Combine(environment.WebRootPath, "invoices");
+        _invoiceOutputPath = Path.Combine(environment.WebRootPath ?? environment.ContentRootPath, "invoices");
 
         if (!Directory.Exists(_invoiceOutputPath))
         {

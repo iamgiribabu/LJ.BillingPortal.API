@@ -18,6 +18,8 @@ public class BillingPortalDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<ClientDetails>()
+            .HasKey(c => c.ClientId);
 
         ConfigureClientDetails(modelBuilder);
         ConfigureInvoiceDetails(modelBuilder);
@@ -68,6 +70,8 @@ public class BillingPortalDbContext : DbContext
         builder.Property(c => c.CreatedDate)
             .HasDefaultValueSql("GETUTCDATE()")
             .ValueGeneratedOnAdd();
+
+        builder.Property(c => c.ModifiedDate);
 
         builder.HasIndex(c => c.Gstin)
             .HasDatabaseName("IX_ClientDetails_GSTIN");
@@ -127,6 +131,8 @@ public class BillingPortalDbContext : DbContext
         builder.Property(i => i.CreatedDate)
             .HasDefaultValueSql("GETUTCDATE()")
             .ValueGeneratedOnAdd();
+
+        builder.Property(i => i.ModifiedDate);
 
         builder.HasIndex(i => i.InvoiceNumber)
             .HasDatabaseName("IX_InvoiceDetails_InvoiceNumber");

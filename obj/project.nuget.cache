@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "CkaVtHfS0To=",
+  "dgSpecHash": "dWcnrbQW+mE=",
   "success": true,
   "projectFilePath": "D:\\LJ lifters files\\Billingprotal\\LJ.BillingPortal.API\\LJ.BillingPortal.API.csproj",
   "expectedPackageFiles": [
@@ -60,6 +60,8 @@
     "C:\\Users\\HP\\.nuget\\packages\\microsoft.sqlserver.server\\1.0.0\\microsoft.sqlserver.server.1.0.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\microsoft.win32.systemevents\\6.0.0\\microsoft.win32.systemevents.6.0.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\mono.texttemplating\\3.0.0\\mono.texttemplating.3.0.0.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\runtime.any.system.runtime\\4.3.0\\runtime.any.system.runtime.4.3.0.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\runtime.any.system.text.encoding\\4.3.0\\runtime.any.system.text.encoding.4.3.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\scrutor\\3.3.0\\scrutor.3.3.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\serilog\\4.2.0\\serilog.4.2.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\serilog.aspnetcore\\8.0.2\\serilog.aspnetcore.8.0.2.nupkg.sha512",
@@ -94,6 +96,7 @@
     "C:\\Users\\HP\\.nuget\\packages\\system.memory\\4.5.4\\system.memory.4.5.4.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.memory.data\\1.0.2\\system.memory.data.1.0.2.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\system.private.uri\\4.3.0\\system.private.uri.4.3.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.reflection.metadata\\7.0.0\\system.reflection.metadata.7.0.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.runtime\\4.3.0\\system.runtime.4.3.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.runtime.caching\\6.0.0\\system.runtime.caching.6.0.0.nupkg.sha512",
@@ -110,7 +113,10 @@
     "C:\\Users\\HP\\.nuget\\packages\\system.threading.channels\\7.0.0\\system.threading.channels.7.0.0.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.threading.tasks.extensions\\4.5.4\\system.threading.tasks.extensions.4.5.4.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\system.windows.extensions\\6.0.0\\system.windows.extensions.6.0.0.nupkg.sha512",
-    "C:\\Users\\HP\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\9.0.13\\microsoft.netcore.app.crossgen2.win-x64.9.0.13.nupkg.sha512"
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\9.0.14\\microsoft.netcore.app.crossgen2.win-x64.9.0.14.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\9.0.14\\microsoft.aspnetcore.app.runtime.win-x64.9.0.14.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\9.0.14\\microsoft.windowsdesktop.app.runtime.win-x64.9.0.14.nupkg.sha512",
+    "C:\\Users\\HP\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\9.0.14\\microsoft.netcore.app.runtime.win-x64.9.0.14.nupkg.sha512"
   ],
   "logs": [
     {
@@ -122,7 +128,8 @@
       "filePath": "D:\\LJ lifters files\\Billingprotal\\LJ.BillingPortal.API\\LJ.BillingPortal.API.csproj",
       "libraryId": "Serilog.Sinks.Console",
       "targetGraphs": [
-        "net9.0"
+        "net9.0",
+        "net9.0/win-x64"
       ]
     },
     {
@@ -134,7 +141,8 @@
       "filePath": "D:\\LJ lifters files\\Billingprotal\\LJ.BillingPortal.API\\LJ.BillingPortal.API.csproj",
       "libraryId": "Swashbuckle.AspNetCore",
       "targetGraphs": [
-        "net9.0"
+        "net9.0",
+        "net9.0/win-x64"
       ]
     },
     {
@@ -146,7 +154,8 @@
       "filePath": "D:\\LJ lifters files\\Billingprotal\\LJ.BillingPortal.API\\LJ.BillingPortal.API.csproj",
       "libraryId": "Swashbuckle.AspNetCore.Filters",
       "targetGraphs": [
-        "net9.0"
+        "net9.0",
+        "net9.0/win-x64"
       ]
     }
   ]

@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Tests\Services\" />
     <Folder Include="wwwroot\invoices\" />
   </ItemGroup>
 
