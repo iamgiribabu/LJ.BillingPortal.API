@@ -35,4 +35,5 @@ public interface IInvoiceRepository
     Task<IDisposable> BeginTransactionAsync();
     Task CommitTransactionAsync();
     Task RollbackTransactionAsync();
+    Task SaveAsync();
 }

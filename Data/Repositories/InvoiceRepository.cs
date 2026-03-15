@@ -58,7 +58,7 @@ public class InvoiceRepository : IInvoiceRepository
         {
             _logger.LogInformation("Adding new client {ClientName}", client.BilledToName);
             _context.ClientDetails.Add(client);
-            await _context.SaveChangesAsync();
+           // await _context.SaveChangesAsync();
             return client;
         }
         catch (Exception ex)
@@ -164,7 +164,7 @@ public class InvoiceRepository : IInvoiceRepository
         {
             _logger.LogInformation("Adding new invoice {InvoiceNumber}", invoice.InvoiceNumber);
             _context.InvoiceDetails.Add(invoice);
-            await _context.SaveChangesAsync();
+          //  await _context.SaveChangesAsync();
             return invoice;
         }
         catch (Exception ex)
@@ -272,7 +272,7 @@ public class InvoiceRepository : IInvoiceRepository
         {
             _logger.LogInformation("Adding invoice particular for invoice {InvoiceId}", particular.InvoiceId);
             _context.InvoiceParticulars.Add(particular);
-            await _context.SaveChangesAsync();
+           // await _context.SaveChangesAsync();
             return particular;
         }
         catch (Exception ex)
@@ -288,7 +288,7 @@ public class InvoiceRepository : IInvoiceRepository
         {
             _logger.LogInformation("Adding multiple invoice particulars");
             _context.InvoiceParticulars.AddRange(particulars);
-            await _context.SaveChangesAsync();
+           // await _context.SaveChangesAsync();
         }
         catch (Exception ex)
         {
@@ -375,6 +375,11 @@ public class InvoiceRepository : IInvoiceRepository
             _logger.LogError(ex, "Error rolling back transaction");
             throw;
         }
+    }
+
+    public async Task SaveAsync()
+    {
+        await _context.SaveChangesAsync();
     }
 
     #endregion

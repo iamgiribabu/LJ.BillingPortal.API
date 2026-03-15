@@ -170,4 +170,3 @@ D:\LJ lifters files\Billingprotal\LJ.BillingPortal.API\obj\Debug\net9.0\refint\L
 D:\LJ lifters files\Billingprotal\LJ.BillingPortal.API\obj\Debug\net9.0\LJ.BillingPortal.API.pdb
 D:\LJ lifters files\Billingprotal\LJ.BillingPortal.API\obj\Debug\net9.0\LJ.BillingPortal.API.genruntimeconfig.cache
 D:\LJ lifters files\Billingprotal\LJ.BillingPortal.API\obj\Debug\net9.0\ref\LJ.BillingPortal.API.dll
-D:\LJ lifters files\Billingprotal\LJ.BillingPortal.API\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt

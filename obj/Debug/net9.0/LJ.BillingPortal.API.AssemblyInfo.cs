@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LJ.BillingPortal.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6d44e955b628463323aa7a6fd9f6b054ff955cd7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6ebdb477c5226c5679909708f17d9b1ec9348e28")]
 [assembly: System.Reflection.AssemblyProductAttribute("LJ.BillingPortal.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LJ.BillingPortal.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

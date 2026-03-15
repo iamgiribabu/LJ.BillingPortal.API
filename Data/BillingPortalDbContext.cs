@@ -24,6 +24,11 @@ public class BillingPortalDbContext : DbContext
         ConfigureClientDetails(modelBuilder);
         ConfigureInvoiceDetails(modelBuilder);
         ConfigureInvoiceParticular(modelBuilder);
+
+        // seed data
+
+
+
     }
 
     private static void ConfigureClientDetails(ModelBuilder modelBuilder)
@@ -135,6 +140,7 @@ public class BillingPortalDbContext : DbContext
         builder.Property(i => i.ModifiedDate);
 
         builder.HasIndex(i => i.InvoiceNumber)
+            .IsUnique()
             .HasDatabaseName("IX_InvoiceDetails_InvoiceNumber");
 
         builder.HasIndex(i => i.ClientId)
@@ -165,7 +171,7 @@ public class BillingPortalDbContext : DbContext
             .IsRequired();
 
         builder.Property(p => p.HsnSac)
-            .HasColumnName("HSN_SAC")
+            .HasColumnName("HsnSac")
             .HasMaxLength(50)
             .IsRequired();
 

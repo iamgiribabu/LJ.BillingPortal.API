@@ -158,6 +158,7 @@ namespace LJ.BillingPortal.API.Migrations
                         .HasDatabaseName("IX_InvoiceDetails_ClientID");
 
                     b.HasIndex("InvoiceNumber")
+                        .IsUnique()
                         .HasDatabaseName("IX_InvoiceDetails_InvoiceNumber");
 
                     b.ToTable("InvoiceDetails", (string)null);
@@ -186,7 +187,7 @@ namespace LJ.BillingPortal.API.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasColumnName("HSN_SAC");
+                        .HasColumnName("HsnSac");
 
                     b.Property<int>("InvoiceId")
                         .HasColumnType("int")

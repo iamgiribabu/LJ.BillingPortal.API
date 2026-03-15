@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LJ.BillingPortal.API.Migrations
 {
     [DbContext(typeof(BillingPortalDbContext))]
-    [Migration("20260306165650_InitialSetup")]
-    partial class InitialSetup
+    [Migration("20260315071047_MakeInvoiceNumberUnique")]
+    partial class MakeInvoiceNumberUnique
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -161,6 +161,7 @@ namespace LJ.BillingPortal.API.Migrations
                         .HasDatabaseName("IX_InvoiceDetails_ClientID");
 
                     b.HasIndex("InvoiceNumber")
+                        .IsUnique()
                         .HasDatabaseName("IX_InvoiceDetails_InvoiceNumber");
 
                     b.ToTable("InvoiceDetails", (string)null);
@@ -189,7 +190,7 @@ namespace LJ.BillingPortal.API.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasColumnName("HSN_SAC");
+                        .HasColumnName("HsnSac");
 
                     b.Property<int>("InvoiceId")
                         .HasColumnType("int")

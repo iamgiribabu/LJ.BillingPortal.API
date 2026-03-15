@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LJ.BillingPortal.API.Migrations
 {
     [DbContext(typeof(BillingPortalDbContext))]
-    [Migration("20260311194005_addkeyClientId")]
-    partial class addkeyClientId
+    [Migration("20260315063559_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -189,7 +189,7 @@ namespace LJ.BillingPortal.API.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasColumnName("HSN_SAC");
+                        .HasColumnName("HsnSac");
 
                     b.Property<int>("InvoiceId")
                         .HasColumnType("int")

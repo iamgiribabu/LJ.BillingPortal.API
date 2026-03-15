@@ -58,23 +58,31 @@ public class InvoiceService : IInvoiceService
                 CreatedDate = DateTime.UtcNow
             };
 
-            // Execute client and invoice number tasks in parallel
-            var clientTask = _repository.AddClientAsync(clientDetails);
-            var invoiceNumberTask = _repository.GetNextInvoiceNumberAsync();
-
+            // Add client and save (sequential, single-threaded)
             try
             {
-                await Task.WhenAll(clientTask, invoiceNumberTask);
+                clientDetails = await _repository.AddClientAsync(clientDetails);
+                await _repository.SaveAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in parallel task execution - client creation or invoice number generation failed");
+                _logger.LogError(ex, "Error creating client");
                 await _repository.RollbackTransactionAsync();
-                throw new InvoiceCreationException("Failed to create client or generate invoice number", ex);
+                throw new InvoiceCreationException("Failed to create client", ex);
             }
 
-            clientDetails = clientTask.Result;
-            var nextInvoiceNumber = invoiceNumberTask.Result;
+            // Get next invoice number
+            string nextInvoiceNumber;
+            try
+            {
+                nextInvoiceNumber = await _repository.GetNextInvoiceNumberAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating invoice number");
+                await _repository.RollbackTransactionAsync();
+                throw new InvoiceCreationException("Failed to generate invoice number", ex);
+            }
 
             // Create invoice
             var invoice = new InvoiceDetails
@@ -94,13 +102,15 @@ public class InvoiceService : IInvoiceService
                 Client = clientDetails
             };
 
+            // Add invoice and save (sequential, single-threaded)
             try
             {
                 invoice = await _repository.AddInvoiceAsync(invoice);
+                await _repository.SaveAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating invoice - transaction will be rolled back");
+                _logger.LogError(ex, "Error creating invoice");
                 await _repository.RollbackTransactionAsync();
                 throw new InvoiceCreationException("Failed to create invoice", ex);
             }
@@ -119,13 +129,15 @@ public class InvoiceService : IInvoiceService
                 })
                 .ToList();
 
+            // Add particulars and save (sequential, single-threaded)
             try
             {
-                await AddParticularsInParallelAsync(particulars);
+                await AddParticularsSequentiallyAsync(particulars);
+                await _repository.SaveAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding invoice particulars - transaction will be rolled back");
+                _logger.LogError(ex, "Error adding invoice particulars");
                 await _repository.RollbackTransactionAsync();
                 throw new InvoiceCreationException("Failed to add invoice particulars", ex);
             }
@@ -150,55 +162,35 @@ public class InvoiceService : IInvoiceService
     }
 
     /// <summary>
-    /// Adds invoice particulars in parallel with batch processing
-    /// Fails fast if any particular fails to insert
+    /// Adds invoice particulars sequentially (single-threaded)
+    /// All Add() calls happen before SaveAsync() to ensure thread safety
     /// </summary>
-    private async Task AddParticularsInParallelAsync(List<InvoiceParticular> particulars)
+    private async Task AddParticularsSequentiallyAsync(List<InvoiceParticular> particulars)
     {
         if (!particulars.Any())
         {
             return;
         }
 
-        _logger.LogInformation($"Starting parallel insertion of {particulars.Count} invoice particulars");
-
-        // Configure batch size for parallel operations
-        int batchSize = Math.Max(Environment.ProcessorCount, 4);
-        var batches = particulars
-            .Select((particular, index) => new { particular, index })
-            .GroupBy(x => x.index / batchSize)
-            .Select(g => g.Select(x => x.particular).ToList())
-            .ToList();
+        _logger.LogInformation($"Adding {particulars.Count} invoice particulars sequentially");
 
         try
         {
-            foreach (var batch in batches)
+            foreach (var particular in particulars)
             {
-                var particularTasks = batch
-                    .Select(p => AddParticularWithErrorHandlingAsync(p))
-                    .ToList();
-
-                _logger.LogInformation($"Processing batch of {batch.Count} particulars");
-
-                // Wait for all tasks in the batch to complete
-                var results = await Task.WhenAll(particularTasks);
-
-                // Check if any task failed
-                var failedResults = results.Where(r => !r.Success).ToList();
-                if (failedResults.Any())
+                try
                 {
-                    var failureMessage = string.Join("; ", failedResults.Select(r => r.ErrorMessage));
-                    var failedOperations = failedResults.Select(r => $"ServiceId: {r.ServiceId}").ToList();
-                    _logger.LogError($"Batch operation failed: {failureMessage}. Rolling back all operations.");
-                    throw new InvoiceCreationException(
-                        $"Failed to insert particulars: {failureMessage}", 
-                        failedOperations);
+                    await _repository.AddParticularAsync(particular);
                 }
-
-                _logger.LogInformation($"Batch of {batch.Count} particulars inserted successfully");
+                catch (Exception ex)
+                {
+                    var errorMessage = $"Failed to track particular for Invoice ID {particular.InvoiceId}: {ex.Message}";
+                    _logger.LogError(ex, errorMessage);
+                    throw new InvoiceCreationException(errorMessage, ex);
+                }
             }
 
-            _logger.LogInformation($"All {particulars.Count} invoice particulars inserted successfully");
+            _logger.LogInformation($"All {particulars.Count} invoice particulars tracked successfully");
         }
         catch (InvoiceCreationException)
         {
@@ -206,32 +198,8 @@ public class InvoiceService : IInvoiceService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error during parallel insertion of particulars");
-            throw new InvoiceCreationException("Unexpected error during parallel insertion of particulars", ex);
-        }
-    }
-
-    /// <summary>
-    /// Adds a single particular with error handling
-    /// Returns a result object indicating success or failure
-    /// </summary>
-    private async Task<OperationResult> AddParticularWithErrorHandlingAsync(InvoiceParticular particular)
-    {
-        try
-        {
-            await _repository.AddParticularAsync(particular);
-            return new OperationResult { Success = true, ServiceId = particular.ServiceId };
-        }
-        catch (Exception ex)
-        {
-            var errorMessage = $"Failed to insert particular for Invoice ID {particular.InvoiceId}: {ex.Message}";
-            _logger.LogError(ex, errorMessage);
-            return new OperationResult 
-            { 
-                Success = false, 
-                ServiceId = particular.ServiceId,
-                ErrorMessage = errorMessage 
-            };
+            _logger.LogError(ex, "Error during sequential tracking of particulars");
+            throw new InvoiceCreationException("Unexpected error during sequential tracking of particulars", ex);
         }
     }
 

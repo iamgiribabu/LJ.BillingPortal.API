@@ -5,6 +5,7 @@ namespace LJ.BillingPortal.API.DTOs;
 /// </summary>
 public class CreateInvoiceDetailsDto
 {
+    public string InvoiceNumber { get; set; } = null!;
     public DateTime InvoiceDate { get; set; }
     public string PlaceOfSupply { get; set; } = null!;
     public string PoNumber { get; set; } = null!;
@@ -21,7 +22,6 @@ public class CreateInvoiceDetailsDto
 /// </summary>
 public class UpdateInvoiceDetailsDto
 {
-    public string InvoiceNumber { get; set; } = null!;
     public DateTime InvoiceDate { get; set; }
     public string PlaceOfSupply { get; set; } = null!;
     public string PoNumber { get; set; } = null!;
