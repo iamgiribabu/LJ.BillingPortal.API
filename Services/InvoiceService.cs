@@ -1,8 +1,9 @@
-using LJ.BillingPortal.API.Data;
+using LJ.BillingPortal.API.Data.Repositories.Interfaces;
 using LJ.BillingPortal.API.DTOs;
+using LJ.BillingPortal.API.Exceptions;
 using LJ.BillingPortal.API.Models;
 using LJ.BillingPortal.API.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using LJ.BillingPortal.API.Services.Models;
 
 namespace LJ.BillingPortal.API.Services;
 
@@ -11,14 +12,14 @@ namespace LJ.BillingPortal.API.Services;
 /// </summary>
 public class InvoiceService : IInvoiceService
 {
-    private readonly BillingPortalDbContext _dbContext;
+    private readonly IInvoiceRepository _repository;
     private readonly ILogger<InvoiceService> _logger;
 
     public InvoiceService(
-        BillingPortalDbContext dbContext,
+        IInvoiceRepository repository,
         ILogger<InvoiceService> logger)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -26,37 +27,21 @@ public class InvoiceService : IInvoiceService
     {
         _logger.LogInformation("Fetching all invoices");
 
-        var invoices = await _dbContext.InvoiceDetails
-            .Include(i => i.Client)
-            .Include(i => i.Particulars)
-            .OrderByDescending(i => i.CreatedDate)
-            .ToListAsync();
-
+        var invoices = await _repository.GetAllInvoicesAsync();
         return invoices.Select(MapToInvoiceResponseDto).ToList();
     }
 
     public async Task<string> GetNextInvoiceNumberAsync()
     {
         _logger.LogInformation("Fetching next invoice number");
-
-        var lastInvoice = await _dbContext.InvoiceDetails
-            .OrderByDescending(i => i.InvoiceNumber)
-            .FirstOrDefaultAsync();
-
-        int nextNumber = 1001;
-        if (lastInvoice != null && int.TryParse(lastInvoice.InvoiceNumber, out int lastNum))
-        {
-            nextNumber = lastNum + 1;
-        }
-
-        return nextNumber.ToString();
+        return await _repository.GetNextInvoiceNumberAsync();
     }
 
     public async Task<InvoiceResponseDto> CreateInvoiceAsync(CreateCompleteInvoiceDto request)
     {
         _logger.LogInformation("Creating new invoice");
 
-        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        var transaction = await _repository.BeginTransactionAsync();
 
         try
         {
@@ -73,11 +58,23 @@ public class InvoiceService : IInvoiceService
                 CreatedDate = DateTime.UtcNow
             };
 
-            _dbContext.ClientDetails.Add(clientDetails);
-            await _dbContext.SaveChangesAsync();
+            // Execute client and invoice number tasks in parallel
+            var clientTask = _repository.AddClientAsync(clientDetails);
+            var invoiceNumberTask = _repository.GetNextInvoiceNumberAsync();
 
-            // Get next invoice number
-            var nextInvoiceNumber = await GetNextInvoiceNumberAsync();
+            try
+            {
+                await Task.WhenAll(clientTask, invoiceNumberTask);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in parallel task execution - client creation or invoice number generation failed");
+                await _repository.RollbackTransactionAsync();
+                throw new InvoiceCreationException("Failed to create client or generate invoice number", ex);
+            }
+
+            clientDetails = clientTask.Result;
+            var nextInvoiceNumber = invoiceNumberTask.Result;
 
             // Create invoice
             var invoice = new InvoiceDetails
@@ -97,8 +94,16 @@ public class InvoiceService : IInvoiceService
                 Client = clientDetails
             };
 
-            _dbContext.InvoiceDetails.Add(invoice);
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                invoice = await _repository.AddInvoiceAsync(invoice);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating invoice - transaction will be rolled back");
+                await _repository.RollbackTransactionAsync();
+                throw new InvoiceCreationException("Failed to create invoice", ex);
+            }
 
             // Create particulars
             var particulars = request.InvoiceParticulars
@@ -114,10 +119,18 @@ public class InvoiceService : IInvoiceService
                 })
                 .ToList();
 
-            _dbContext.InvoiceParticulars.AddRange(particulars);
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                await AddParticularsInParallelAsync(particulars);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding invoice particulars - transaction will be rolled back");
+                await _repository.RollbackTransactionAsync();
+                throw new InvoiceCreationException("Failed to add invoice particulars", ex);
+            }
 
-            await transaction.CommitAsync();
+            await _repository.CommitTransactionAsync();
 
             _logger.LogInformation($"Invoice {nextInvoiceNumber} created successfully for client {clientDetails.ClientId}");
 
@@ -127,9 +140,98 @@ public class InvoiceService : IInvoiceService
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error creating invoice");
+            _logger.LogError(ex, "Error creating invoice - all operations rolled back");
             throw;
+        }
+        finally
+        {
+            transaction.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Adds invoice particulars in parallel with batch processing
+    /// Fails fast if any particular fails to insert
+    /// </summary>
+    private async Task AddParticularsInParallelAsync(List<InvoiceParticular> particulars)
+    {
+        if (!particulars.Any())
+        {
+            return;
+        }
+
+        _logger.LogInformation($"Starting parallel insertion of {particulars.Count} invoice particulars");
+
+        // Configure batch size for parallel operations
+        int batchSize = Math.Max(Environment.ProcessorCount, 4);
+        var batches = particulars
+            .Select((particular, index) => new { particular, index })
+            .GroupBy(x => x.index / batchSize)
+            .Select(g => g.Select(x => x.particular).ToList())
+            .ToList();
+
+        try
+        {
+            foreach (var batch in batches)
+            {
+                var particularTasks = batch
+                    .Select(p => AddParticularWithErrorHandlingAsync(p))
+                    .ToList();
+
+                _logger.LogInformation($"Processing batch of {batch.Count} particulars");
+
+                // Wait for all tasks in the batch to complete
+                var results = await Task.WhenAll(particularTasks);
+
+                // Check if any task failed
+                var failedResults = results.Where(r => !r.Success).ToList();
+                if (failedResults.Any())
+                {
+                    var failureMessage = string.Join("; ", failedResults.Select(r => r.ErrorMessage));
+                    var failedOperations = failedResults.Select(r => $"ServiceId: {r.ServiceId}").ToList();
+                    _logger.LogError($"Batch operation failed: {failureMessage}. Rolling back all operations.");
+                    throw new InvoiceCreationException(
+                        $"Failed to insert particulars: {failureMessage}", 
+                        failedOperations);
+                }
+
+                _logger.LogInformation($"Batch of {batch.Count} particulars inserted successfully");
+            }
+
+            _logger.LogInformation($"All {particulars.Count} invoice particulars inserted successfully");
+        }
+        catch (InvoiceCreationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error during parallel insertion of particulars");
+            throw new InvoiceCreationException("Unexpected error during parallel insertion of particulars", ex);
+        }
+    }
+
+    /// <summary>
+    /// Adds a single particular with error handling
+    /// Returns a result object indicating success or failure
+    /// </summary>
+    private async Task<OperationResult> AddParticularWithErrorHandlingAsync(InvoiceParticular particular)
+    {
+        try
+        {
+            await _repository.AddParticularAsync(particular);
+            return new OperationResult { Success = true, ServiceId = particular.ServiceId };
+        }
+        catch (Exception ex)
+        {
+            var errorMessage = $"Failed to insert particular for Invoice ID {particular.InvoiceId}: {ex.Message}";
+            _logger.LogError(ex, errorMessage);
+            return new OperationResult 
+            { 
+                Success = false, 
+                ServiceId = particular.ServiceId,
+                ErrorMessage = errorMessage 
+            };
         }
     }
 
@@ -137,10 +239,7 @@ public class InvoiceService : IInvoiceService
     {
         _logger.LogInformation("Fetching all client addresses");
 
-        var clients = await _dbContext.ClientDetails
-            .OrderByDescending(c => c.CreatedDate)
-            .ToListAsync();
-
+        var clients = await _repository.GetAllClientsAsync();
         return clients.Select(MapToClientDetailsDto).ToList();
     }
 
@@ -148,7 +247,7 @@ public class InvoiceService : IInvoiceService
     {
         _logger.LogInformation($"Updating client address for client {request.ClientId}");
 
-        var client = await _dbContext.ClientDetails.FindAsync(request.ClientId);
+        var client = await _repository.GetClientByIdAsync(request.ClientId);
         if (client == null)
         {
             _logger.LogWarning($"Client {request.ClientId} not found");
@@ -166,8 +265,7 @@ public class InvoiceService : IInvoiceService
             client.StateCode = request.StateCode;
             client.ModifiedDate = DateTime.UtcNow;
 
-            _dbContext.ClientDetails.Update(client);
-            await _dbContext.SaveChangesAsync();
+            await _repository.UpdateClientAsync(client);
 
             _logger.LogInformation($"Client {request.ClientId} updated successfully");
             return true;
@@ -183,8 +281,7 @@ public class InvoiceService : IInvoiceService
     {
         _logger.LogInformation($"Updating invoice {request.InvoiceNumber}");
 
-        var invoice = await _dbContext.InvoiceDetails
-            .FirstOrDefaultAsync(i => i.InvoiceNumber == request.InvoiceNumber);
+        var invoice = await _repository.GetInvoiceByNumberAsync(request.InvoiceNumber);
 
         if (invoice == null)
         {
@@ -205,8 +302,7 @@ public class InvoiceService : IInvoiceService
             invoice.NetAmountAfterTax = request.NetAmountAfterTax;
             invoice.ModifiedDate = DateTime.UtcNow;
 
-            _dbContext.InvoiceDetails.Update(invoice);
-            await _dbContext.SaveChangesAsync();
+            await _repository.UpdateInvoiceAsync(invoice);
 
             _logger.LogInformation($"Invoice {request.InvoiceNumber} updated successfully");
             return true;
@@ -222,7 +318,7 @@ public class InvoiceService : IInvoiceService
     {
         _logger.LogInformation($"Updating invoice particular {request.ServiceId}");
 
-        var particular = await _dbContext.InvoiceParticulars.FindAsync(request.ServiceId);
+        var particular = await _repository.GetParticularByIdAsync(request.ServiceId);
 
         if (particular == null)
         {
@@ -238,8 +334,7 @@ public class InvoiceService : IInvoiceService
             particular.Rate = request.Rate;
             particular.TaxableValue = request.TaxableValue;
 
-            _dbContext.InvoiceParticulars.Update(particular);
-            await _dbContext.SaveChangesAsync();
+            await _repository.UpdateParticularAsync(particular);
 
             _logger.LogInformation($"Invoice particular {request.ServiceId} updated successfully");
             return true;

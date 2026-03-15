@@ -1,13 +1,12 @@
 using FluentValidation;
 using LJ.BillingPortal.API.Data;
-using LJ.BillingPortal.API.DTOs;
+using LJ.BillingPortal.API.Data.Repositories;
+using LJ.BillingPortal.API.Data.Repositories.Interfaces;
 using LJ.BillingPortal.API.Middleware;
 using LJ.BillingPortal.API.Services;
 using LJ.BillingPortal.API.Services.Interfaces;
 using LJ.BillingPortal.API.Validators;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,9 +32,7 @@ try
     var connectionString = builder.Configuration.GetConnectionString("BillingPortalDBConnection")
         ?? throw new InvalidOperationException("Connection string 'BillingPortalDBConnection' not found.");
 
-    builder.Services.AddDbContext<BillingPortalDbContext>(options =>
-        options.UseSqlServer(connectionString, x => x.CommandTimeout(300))
-    );
+    builder.Services.AddDbContext<BillingPortalDbContext>(options => options.UseSqlServer(connectionString));
 
     // Add CORS
     builder.Services.AddCors(options =>
@@ -75,6 +72,9 @@ try
     // Add Validators
     builder.Services.AddValidatorsFromAssemblyContaining(typeof(CreateClientDetailsDtoValidator));
 
+    // Add Repositories
+    builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+
     // Add Services
     builder.Services.AddScoped<IInvoiceService, InvoiceService>();
     builder.Services.AddScoped<IPdfGenerationService, PdfGenerationService>();
@@ -82,6 +82,8 @@ try
     // Add Health Check
     builder.Services.AddHealthChecks()
         .AddDbContextCheck<BillingPortalDbContext>();
+
+    //builder.WebHost.UseWebRoot("wwwroot");
 
     var app = builder.Build();
 
